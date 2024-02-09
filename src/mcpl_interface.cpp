@@ -13,6 +13,9 @@
 
 #ifdef OPENMC_MCPL
 #include <mcpl.h>
+extern "C" {
+#include "kdsource.h"
+}
 #endif
 
 namespace openmc {
@@ -70,27 +73,33 @@ SourceSite mcpl_particle_to_site(const mcpl_particle_t* particle)
 
 //==============================================================================
 
-vector<SourceSite> mcpl_source_sites(std::string path)
+vector<SourceSite> mcpl_source_sites(std::string path, int n_particles_to_sample)
 {
   vector<SourceSite> sites;
 
 #ifdef OPENMC_MCPL
   // Open MCPL file and determine number of particles
-  auto mcpl_file = mcpl_open_file(path.c_str());
-  size_t n_sites = mcpl_hdr_nparticles(mcpl_file);
+  const char* filename = path.data();
+  KDSource* kdsource = KDS_open(filename);
+  //auto mcpl_file = mcpl_open_file(path.c_str());
+  size_t n_sites = n_particles_to_sample;//mcpl_hdr_nparticles(mcpl_file); //aca hay que poner la cantidad de particulas que el usuario quiere simular 
+
+  int eof_reached;
 
   for (int i = 0; i < n_sites; i++) {
     // Extract particle from mcpl-file, checking if it is a neutron, photon,
     // electron, or positron. Otherwise skip.
-    const mcpl_particle_t* particle;
+    mcpl_particle_t particle;
+    const mcpl_particle_t *ptr_particle = &particle;
     int pdg = 0;
     while (pdg != 2112 && pdg != 22 && pdg != 11 && pdg != -11) {
-      particle = mcpl_read(mcpl_file);
-      pdg = particle->pdgcode;
+      eof_reached = KDS_sample2(kdsource, &particle, 0, -1, NULL, 1);
+      //particle = mcpl_read(mcpl_file);
+      pdg = particle.pdgcode;
     }
 
     // Convert to source site and add to vector
-    sites.push_back(mcpl_particle_to_site(particle));
+    sites.push_back(mcpl_particle_to_site(ptr_particle));
   }
 
   // Check that some sites were read
@@ -99,7 +108,8 @@ vector<SourceSite> mcpl_source_sites(std::string path)
                 "source particles.");
   }
 
-  mcpl_close_file(mcpl_file);
+  KDS_destroy(kdsource);
+  // mcpl_close_file(mcpl_file);
 #else
   fatal_error(
     "Your build of OpenMC does not support reading MCPL source files.");

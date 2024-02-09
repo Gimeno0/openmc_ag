@@ -24,7 +24,7 @@ extern "C" const bool MCPL_ENABLED;
 //
 //! \param[in] path  Path to MCPL file
 //! \return  Vector of source sites
-vector<SourceSite> mcpl_source_sites(std::string path);
+vector<SourceSite> mcpl_source_sites(std::string path, int n_particles_to_sample);
 
 //! Write an MCPL source file
 //
