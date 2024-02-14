@@ -35,6 +35,8 @@
 #include "openmc/string_utils.h"
 #include "openmc/xml_interface.h"
 
+
+
 namespace openmc {
 
 //==============================================================================
@@ -287,7 +289,13 @@ FileSource::FileSource(pugi::xml_node node)
 {
   auto path = get_node_value(node, "file", false, true);
   if (ends_with(path, ".xml")) {
-    sites_ = mcpl_source_sites(path, settings::n_particles);
+    // sites_ = mcpl_source_sites(path, settings::n_particles);
+    const char* filename = path.data();
+    kdsource = KDS_open(filename);
+    // if(settings::n_particles % kdsource->plist->npts)
+    // {
+    //   settings::n_particles -= settings::n_particles % kdsource->plist->npts;
+    // }
   } else {
     this->load_sites_from_file(path);
   }
@@ -333,19 +341,29 @@ void FileSource::load_sites_from_file(const std::string& path)
 //   //aca tengo que sacar lo aleatorio, pero no quiero matar la file source. 
 // }
 
-static size_t i_site = 0;
+// static size_t i_site = 0;
+
+// SourceSite FileSource::sample(uint64_t* seed) const
+// {
+//   if (i_site<sites_.size()){
+//     i_site++;
+//     return sites_[i_site-1];
+//   } else {
+//     i_site = 1;
+//     std::cout << "SS" << std::endl;
+//     return sites_[i_site-1];
+//   }
+// }
+
 
 SourceSite FileSource::sample(uint64_t* seed) const
 {
-  if (i_site<sites_.size()){
-    i_site++;
-    return sites_[i_site-1];
-  } else {
-    i_site = 1;
-    std::cout << "SS" << std::endl;
-    return sites_[i_site-1];
-  }
+  mcpl_particle_t particle;
+  KDS_sample2(kdsource, &particle, 1, -1, NULL, 1);
+  const mcpl_particle_t* ptr_particle = &particle;
+  return mcpl_particle_to_site(ptr_particle);
 }
+
 
 //==============================================================================
 // CompiledSourceWrapper implementation
@@ -496,7 +514,6 @@ SourceSite sample_external_source(uint64_t* seed)
   if (model::external_sources.size() > 1) {
     double xi = prn(seed) * total_strength;
     double c = 0.0;
-    std::cout << "S1" << std::endl;
     for (; i < model::external_sources.size(); ++i) {
       c += model::external_sources[i]->strength();
       if (xi < c)
@@ -506,10 +523,8 @@ SourceSite sample_external_source(uint64_t* seed)
 
   // Sample source site from i-th source distribution
   SourceSite site {model::external_sources[i]->sample(seed)};
-  std::cout << "S2" << std::endl;
   // If running in MG, convert site.E to group
   if (!settings::run_CE) {
-    std::cout << "S3" << std::endl;
     site.E = lower_bound_index(data::mg.rev_energy_bins_.begin(),
       data::mg.rev_energy_bins_.end(), site.E);
     site.E = data::mg.num_energy_groups_ - site.E - 1.;

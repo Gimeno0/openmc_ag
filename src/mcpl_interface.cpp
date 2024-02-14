@@ -11,12 +11,7 @@
 
 #include <fmt/core.h>
 
-#ifdef OPENMC_MCPL
-#include <mcpl.h>
-extern "C" {
-#include "kdsource.h"
-}
-#endif
+
 
 namespace openmc {
 
@@ -34,10 +29,11 @@ const bool MCPL_ENABLED = false;
 // Functions
 //==============================================================================
 
-#ifdef OPENMC_MCPL
 SourceSite mcpl_particle_to_site(const mcpl_particle_t* particle)
-{
+{  
   SourceSite site;
+
+  #ifdef OPENMC_MCPL
 
   switch (particle->pdgcode) {
   case 2112:
@@ -67,9 +63,14 @@ SourceSite mcpl_particle_to_site(const mcpl_particle_t* particle)
   site.time = particle->time * 1e-3;
   site.wgt = particle->weight;
 
+#else 
+  fatal_error(
+    "Your build of OpenMC does not support reading MCPL source files.");
+#endif
+
   return site;
 }
-#endif
+
 
 //==============================================================================
 
@@ -93,7 +94,7 @@ vector<SourceSite> mcpl_source_sites(std::string path, int n_particles_to_sample
     const mcpl_particle_t *ptr_particle = &particle;
     int pdg = 0;
     while (pdg != 2112 && pdg != 22 && pdg != 11 && pdg != -11) {
-      eof_reached = KDS_sample2(kdsource, &particle, 0, -1, NULL, 1);
+      eof_reached = KDS_sample2(kdsource, &particle, 1, -1, NULL, 1);
       //particle = mcpl_read(mcpl_file);
       pdg = particle.pdgcode;
     }

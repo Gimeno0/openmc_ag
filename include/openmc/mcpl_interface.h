@@ -8,6 +8,13 @@
 
 #include <string>
 
+#ifdef OPENMC_MCPL
+#include <mcpl.h>
+extern "C" {
+#include "kdsource.h"
+}
+#endif
+
 namespace openmc {
 
 //==============================================================================
@@ -19,6 +26,8 @@ extern "C" const bool MCPL_ENABLED;
 //==============================================================================
 // Functions
 //==============================================================================
+
+SourceSite mcpl_particle_to_site(const mcpl_particle_t* particle);
 
 //! Get a vector of source sites from an MCPL file
 //
