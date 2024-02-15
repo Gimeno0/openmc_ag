@@ -292,10 +292,13 @@ FileSource::FileSource(pugi::xml_node node)
     // sites_ = mcpl_source_sites(path, settings::n_particles);
     const char* filename = path.data();
     kdsource = KDS_open(filename);
-    // if(settings::n_particles % kdsource->plist->npts)
-    // {
-    //   settings::n_particles -= settings::n_particles % kdsource->plist->npts;
-    // }
+    n_particles_resampled = 0;
+    if(settings::n_particles % kdsource->plist->npts)
+    {
+      std::cout << settings::n_particles << std::endl;
+      settings::n_particles -= settings::n_particles % kdsource->plist->npts;
+      std::cout << settings::n_particles << std::endl;
+    }
   } else {
     this->load_sites_from_file(path);
   }
@@ -358,9 +361,11 @@ void FileSource::load_sites_from_file(const std::string& path)
 
 SourceSite FileSource::sample(uint64_t* seed) const
 {
+  // n_particles_resampled > settings::n_particles ? return : continue;
   mcpl_particle_t particle;
   KDS_sample2(kdsource, &particle, 1, -1, NULL, 1);
   const mcpl_particle_t* ptr_particle = &particle;
+  n_particles_resampled++;
   return mcpl_particle_to_site(ptr_particle);
 }
 

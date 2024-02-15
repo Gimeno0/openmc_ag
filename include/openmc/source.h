@@ -120,6 +120,7 @@ public:
 private:
   vector<SourceSite> sites_; //!< Source sites from a file
   KDSource* kdsource;
+  extern "C" int64_t n_particles_resampled;
 };
 
 //==============================================================================
