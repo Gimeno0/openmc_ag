@@ -40,7 +40,7 @@ extern "C" bool satisfy_triggers;  //!< have tally triggers been satisfied?
 extern "C" int total_gen;          //!< total number of generations simulated
 extern double total_weight;        //!< Total source weight in a batch
 extern int64_t work_per_rank;      //!< number of particles per MPI rank
-
+extern int i_seq;                  //!< Position of the file source for sequential read
 extern const RegularMesh* entropy_mesh;
 extern const RegularMesh* ufs_mesh;
 
