@@ -406,10 +406,20 @@ SourceSite KernelDensitySource::sample(uint64_t* seed) const
   const mcpl_particle_t* ptr_particle = &particle;
   #pragma omp critical // it has to be "critical" because KDSource's random number generator is not implemented in multi-threading
   {
-    prn(seed);
-    if (perturb)
-      this->set_seed_to_pertub(seed,thread_num());
-    KDS_sample2(kdsource[thread_num()], &particle, perturb, w_critic, NULL, 1);    
+    try
+    {
+      // std::cout<< "la 1" << *seed <<std::endl; 
+      prn(seed);
+      prn(seed);
+      // std::cout<< "la 2" << *seed <<std::endl; 
+      if (perturb)
+        this->set_seed_to_pertub(seed,thread_num());
+      KDS_sample2(kdsource[thread_num()], &particle, perturb, w_critic, NULL, 1);    
+    }
+    catch (const std::runtime_error& e)
+    {
+      std::cerr << "Se produjo un error: " << e.what() << std::endl;
+    }
   }
   return mcpl_particle_to_site(ptr_particle);
 }
